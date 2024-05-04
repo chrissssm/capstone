@@ -27,11 +27,19 @@ def load_model():
     return(loaded_model)
 
 # Load Data and Model
-data = load_data()
-model = load_model()
+#data = load_data()
+#model = load_model()
 
+
+#### Define Header of app
 st.title("Hotel Booking Optimizer")
 st.markdown("🏨🛏️💸 This application can be used to determine how many hotel rooms can be overbooked 🏨🛏️💸")
+
+#### Definition of Section 1 for exploring overbooking possibilities
+
+st.header("Overbooking Overview")
+
+
 
 # Function to adjust capacity and calculate overbooked rooms
 def adjust_capacity(booking_data, max_capacity, show_rate):
