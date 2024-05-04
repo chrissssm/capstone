@@ -14,6 +14,25 @@ st.set_page_config(
     layout="wide"
     )
 
+# Define Load functions
+@st.cache_data
+def load_data():
+    data = pd.read_csv("data.csv")
+    return(data.dropna())
+
+@st.cache_resource
+def load_model():
+    filename = "model.sav"
+    loaded_model = pickle.load(open(filename, "rb"))
+    return(loaded_model)
+
+# Load Data and Model
+data = load_data()
+model = load_model()
+
+st.title("Hotel Booking Optimizer")
+st.markdown("🏨🛏️💸 This application can be used to determine how many hotel rooms can be overbooked 🏨🛏️💸")
+
 # Function to adjust capacity and calculate overbooked rooms
 def adjust_capacity(booking_data, max_capacity, show_rate):
     # Calculate available rooms based on max capacity and show rate
@@ -31,7 +50,7 @@ def adjust_capacity(booking_data, max_capacity, show_rate):
 
 # Streamlit app
 def main():
-    st.title("Hotel Booking Optimization")
+    
 
     # Section 1: Capacity Adjustment
     st.header("Capacity Adjustment")
