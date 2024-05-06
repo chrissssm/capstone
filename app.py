@@ -107,74 +107,49 @@ if uploaded_file is not None:
 
 ###################################################################################################
 
-# Function to adjust capacity and calculate overbooked rooms
-def adjust_capacity(booking_data, max_capacity, show_rate):
-    # Calculate available rooms based on max capacity and show rate
-    available_rooms = int(max_capacity / show_rate)
-    
-    # Calculate overbooked rooms per date
-    overbooked_rooms = available_rooms - booking_data.groupby('arrival_date').size()
-    overbooked_rooms[overbooked_rooms < 0] = 0
-    
-    # Calculate additional revenue
-    avg_room_price = booking_data['avg_price_per_room'].mean()
-    additional_revenue = avg_room_price * overbooked_rooms.sum()
-    
-    return overbooked_rooms, additional_revenue
 
-# Streamlit app
-def main():
-    
+# Section for uploading data to calculate 'is_no_show' and providing a CSV download
+st.header("Calculate 'is_no_show' and Download Data")
+uploaded_data = st.file_uploader("Upload data to calculate 'is_no_show' (in CSV format)", type="csv")
+if uploaded_data is not None:
+    data_to_calculate = pd.read_csv(uploaded_data)
+    data_to_calculate['date'] = pd.to_datetime(data_to_calculate['full_date'])  # Assuming 'full_date' is in a proper date format
+    st.write("Data successfully uploaded! Here's a snippet of the dataset:")
+    st.dataframe(data_to_calculate.head())
 
-    # Section 1: Capacity Adjustment
-    st.header("Capacity Adjustment")
+    model = load_model()
 
-    # Upload future bookings test set
-    uploaded_file = st.file_uploader("Upload Future Bookings Test Set (CSV)", type=['csv'])
+    # Handle categorical features to match training
+    expected_categories = {
+        'market_segment_type': ['Complementary', 'Online', 'Offline', "Corporate", "Aviation"],
+        'type_of_meal_plan': ['Meal Plan 1', 'Meal Plan 2', 'Meal Plan 3', 'Not Selected'],
+        'room_type_reserved': ['Room_Type 1', 'Room_Type 2', 'Room_Type 3', 'Room_Type 4', 'Room_Type 5', 'Room_Type 6', 'Room_Type 7']
+    }
+    data_to_calculate = pd.get_dummies(data_to_calculate, columns=['market_segment_type', 'type_of_meal_plan', 'room_type_reserved'], drop_first=False)
+    for column, categories in expected_categories.items():
+        for category in categories:
+            expected_col = f'{column}_{category}'
+            if expected_col not in data_to_calculate.columns:
+                data_to_calculate[expected_col] = 0
 
-    if uploaded_file is not None:
-        # Load booking data
-        booking_data = pd.read_csv(uploaded_file)
+    date_series_calculate = data_to_calculate['date']
 
-        # Imaginary hotel max. capacity
-        max_capacity = st.number_input("Enter Imaginary Hotel Max. Capacity", min_value=1)
+    model_data_calculate = data_to_calculate.drop(columns=['date'], errors='ignore')
+    model_columns_calculate = model.feature_names_in_
+    model_data_calculate = model_data_calculate.reindex(columns=model_columns_calculate, fill_value=0)
 
-        # Show rate (percentage of booked rooms that show up)
-        show_rate = st.slider("Select Show Rate (%)", min_value=0, max_value=100, value=80, step=1)
+    predictions_calculate = model.predict(model_data_calculate)
+    data_to_calculate['is_no_show'] = predictions_calculate
+    data_to_calculate['date'] = date_series_calculate
 
-        # Adjust capacity and calculate overbooked rooms
-        overbooked_rooms, additional_revenue = adjust_capacity(booking_data, max_capacity, show_rate)
+    st.write("Data with 'is_no_show' column calculated:")
+    st.dataframe(data_to_calculate.head())
 
-        # Plot calendar heatmap with adjusted capacity
-        fig = px.imshow(overbooked_rooms.T, color_continuous_scale='Viridis')
-        fig.update_layout(title="Adjusted Capacity Calendar Heatmap", xaxis_title="Date", yaxis_title="Rooms")
-        st.plotly_chart(fig)
+    # Download CSV button
+    st.markdown(get_binary_file_downloader_html(data_to_calculate), unsafe_allow_html=True)
 
-        # Show available rooms
-        st.subheader("Available Rooms (Normal Max. Capacity):")
-        st.write(max_capacity)
-
-        # Show overbooked rooms per date
-        st.subheader("Overbooked Rooms per Date:")
-        st.write(overbooked_rooms)
-
-        # Show additional revenue
-        st.subheader("Additional Revenue:")
-        st.write("$", round(additional_revenue, 2))
-
-    # Section 2: Individual Booking Analysis
-    st.header("Individual Booking Analysis")
-
-    # Input booking details
-    st.subheader("Input Booking Details:")
-    # Here you can add input fields for each variable in the dataset
-
-    # Button to predict no-show for individual booking
-    if st.button("Predict No-Show"):
-        # Perform prediction using the trained model (not shown here)
-        # Display prediction result
-        st.write("No-Show Prediction: Yes/No")
-
-# Run the app
-if __name__ == "__main__":
-    main()
+def get_binary_file_downloader_html(dataframe):
+    csv = dataframe.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  # B64 encoding
+    href = f'<a href="data:file/csv;base64,{b64}" download="hotel_data_with_is_no_show.csv">Download CSV File</a>'
+    return href
