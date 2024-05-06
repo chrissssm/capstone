@@ -20,7 +20,7 @@ st.set_page_config(
 # Cache functions to load data and model
 @st.cache(allow_output_mutation=True)
 def load_model():
-    filename = "model.sav"
+    filename = r"C:\hotel\model.sav"
     loaded_model = pickle.load(open(filename, "rb"))
     return loaded_model
 
@@ -107,7 +107,7 @@ if uploaded_file is not None:
 
 ###################################################################################################
 
-#test
+#testss
 # Section for uploading data to calculate 'is_no_show' and providing a CSV download
 st.header("Calculate 'is_no_show' and Download Data")
 uploaded_data = st.file_uploader("Upload data to calculate 'is_no_show' (in CSV format)", type="csv")
