@@ -107,7 +107,8 @@ if uploaded_file is not None:
 
 ###################################################################################################
 
-#testss
+import base64
+
 # Section for uploading data to calculate 'is_no_show' and providing a CSV download
 st.header("Calculate 'is_no_show' and Download Data")
 uploaded_data = st.file_uploader("Upload data to calculate 'is_no_show' (in CSV format)", type="csv")
@@ -146,10 +147,12 @@ if uploaded_data is not None:
     st.dataframe(data_to_calculate.head())
 
     # Download CSV button
-    st.markdown(get_binary_file_downloader_html(data_to_calculate), unsafe_allow_html=True)
+    csv_download_link = get_binary_file_downloader_html(data_to_calculate)
+    st.markdown(csv_download_link, unsafe_allow_html=True)
 
 def get_binary_file_downloader_html(dataframe):
     csv = dataframe.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()  # B64 encoding
     href = f'<a href="data:file/csv;base64,{b64}" download="hotel_data_with_is_no_show.csv">Download CSV File</a>'
     return href
+
