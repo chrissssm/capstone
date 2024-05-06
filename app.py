@@ -117,7 +117,7 @@ def get_binary_file_downloader_html(dataframe):
     return href
 
 # Section for uploading data to calculate 'is_no_show' and providing a CSV download
-st.header("Calculate 'is_no_show' and Download Data")
+st.header("Direct no-show calculation")
 uploaded_data = st.file_uploader("Upload data to calculate 'is_no_show' (in CSV format)", type="csv")
 if uploaded_data is not None:
     data_to_calculate = pd.read_csv(uploaded_data)
