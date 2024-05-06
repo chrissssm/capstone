@@ -5,6 +5,24 @@ import pickle
 import july
 from datetime import datetime
 
+import plotly.express as px
+
+# Dein Code zum Berechnen von `overbooked_rooms`
+
+fig = px.imshow(
+    overbooked_rooms.values,
+    labels=dict(x="Date", y="Rooms"),
+    x=overbooked_rooms.index,
+    y=overbooked_rooms.columns,
+    color_continuous_scale='Viridis'
+)
+
+st.plotly_chart(fig)
+
+
+
+
+
 # Set app properties
 st.set_page_config(
     page_title="Hotel Booking Optimizer",
