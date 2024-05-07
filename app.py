@@ -157,7 +157,7 @@ if uploaded_data is not None:
     csv_download_link = get_binary_file_downloader_html(data_to_calculate)
     st.markdown(csv_download_link, unsafe_allow_html=True)
 
-
+###############################################################
 # Section for manually inputting booking variables and predicting show/no-show
 st.header("Predict Show/No-Show for a Booking")
 
@@ -220,7 +220,7 @@ if st.button("Predict Show/No-Show"):
                 input_df[expected_col] = 0
 
     # Reorder columns to match model input
-    input_df = input_df.reindex(columns=model_columns_calculate, fill_value=0)
+    input_df = input_df.reindex(columns=model.feature_names_in_, fill_value=0)
 
     # Predict show/no-show
     prediction = model.predict(input_df)
