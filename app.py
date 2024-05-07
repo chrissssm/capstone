@@ -161,6 +161,9 @@ if uploaded_data is not None:
 # Section for manually inputting booking variables and predicting show/no-show
 st.header("Predict Show/No-Show for a Booking")
 
+# Load the model
+model = load_model()
+
 # Define input fields for booking variables
 no_of_adults = st.number_input("Number of Adults", min_value=1, step=1)
 no_of_children = st.number_input("Number of Children", min_value=0, step=1)
