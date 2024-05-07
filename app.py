@@ -158,3 +158,75 @@ if uploaded_data is not None:
     st.markdown(csv_download_link, unsafe_allow_html=True)
 
 
+# Section for manually inputting booking variables and predicting show/no-show
+st.header("Predict Show/No-Show for a Booking")
+
+# Define input fields for booking variables
+no_of_adults = st.number_input("Number of Adults", min_value=1, step=1)
+no_of_children = st.number_input("Number of Children", min_value=0, step=1)
+no_of_weekend_nights = st.number_input("Number of Weekend Nights", min_value=0, step=1)
+no_of_week_nights = st.number_input("Number of Week Nights", min_value=0, step=1)
+type_of_meal_plan = st.selectbox("Type of Meal Plan", ['Meal Plan 1', 'Meal Plan 2', 'Meal Plan 3', 'Not Selected'])
+required_car_parking_space = st.number_input("Required Car Parking Space", min_value=0, step=1)
+room_type_reserved = st.selectbox("Room Type Reserved", ['Room_Type 1', 'Room_Type 2', 'Room_Type 3', 'Room_Type 4', 'Room_Type 5', 'Room_Type 6', 'Room_Type 7'])
+lead_time = st.number_input("Lead Time (Days)", min_value=0, step=1)
+arrival_year = st.number_input("Arrival Year", min_value=2000, step=1)
+arrival_month = st.number_input("Arrival Month", min_value=1, max_value=12, step=1)
+arrival_date = st.number_input("Arrival Date", min_value=1, max_value=31, step=1)
+market_segment_type = st.selectbox("Market Segment Type", ['Complementary', 'Online', 'Offline', 'Corporate', 'Aviation'])
+repeated_guest = st.selectbox("Repeated Guest", [0, 1])
+no_of_previous_cancellations = st.number_input("Number of Previous Cancellations", min_value=0, step=1)
+no_of_previous_bookings_not_canceled = st.number_input("Number of Previous Bookings Not Canceled", min_value=0, step=1)
+avg_price_per_room = st.number_input("Average Price per Room", min_value=0.0, step=0.01)
+no_of_special_requests = st.number_input("Number of Special Requests", min_value=0, step=1)
+
+# Predict show/no-show for the input booking
+if st.button("Predict Show/No-Show"):
+    # Prepare input data for prediction
+    input_data = {
+        'no_of_adults': no_of_adults,
+        'no_of_children': no_of_children,
+        'no_of_weekend_nights': no_of_weekend_nights,
+        'no_of_week_nights': no_of_week_nights,
+        'type_of_meal_plan': type_of_meal_plan,
+        'required_car_parking_space': required_car_parking_space,
+        'room_type_reserved': room_type_reserved,
+        'lead_time': lead_time,
+        'arrival_year': arrival_year,
+        'arrival_month': arrival_month,
+        'arrival_date': arrival_date,
+        'market_segment_type': market_segment_type,
+        'repeated_guest': repeated_guest,
+        'no_of_previous_cancellations': no_of_previous_cancellations,
+        'no_of_previous_bookings_not_canceled': no_of_previous_bookings_not_canceled,
+        'avg_price_per_room': avg_price_per_room,
+        'no_of_special_requests': no_of_special_requests
+    }
+
+    # Convert input data to DataFrame for consistency with model input
+    input_df = pd.DataFrame([input_data])
+
+    # Handle categorical features to match training
+    input_df = pd.get_dummies(input_df, columns=['type_of_meal_plan', 'room_type_reserved', 'market_segment_type'], drop_first=False)
+    expected_categories = {
+        'type_of_meal_plan': ['Meal Plan 1', 'Meal Plan 2', 'Meal Plan 3', 'Not Selected'],
+        'room_type_reserved': ['Room_Type 1', 'Room_Type 2', 'Room_Type 3', 'Room_Type 4', 'Room_Type 5', 'Room_Type 6', 'Room_Type 7'],
+        'market_segment_type': ['Complementary', 'Online', 'Offline', 'Corporate', 'Aviation']
+    }
+    for column, categories in expected_categories.items():
+        for category in categories:
+            expected_col = f'{column}_{category}'
+            if expected_col not in input_df.columns:
+                input_df[expected_col] = 0
+
+    # Reorder columns to match model input
+    input_df = input_df.reindex(columns=model_columns_calculate, fill_value=0)
+
+    # Predict show/no-show
+    prediction = model.predict(input_df)
+
+    # Display prediction result
+    if prediction == 1:
+        st.write("The booking is predicted to be a no-show.")
+    else:
+        st.write("The booking is predicted to be a show.")
