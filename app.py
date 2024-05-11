@@ -22,7 +22,7 @@ def load_model():
 
 def get_binary_file_downloader_html(dataframe):
     csv = dataframe.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()  # B64 encoding
+    b64 = base64.b64encode(csv.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="hotel_data_with_no_show_prediction.csv">Download CSV File</a>'
     return href
 
@@ -36,6 +36,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     uploaded_file = st.file_uploader("Choose a booking data file (in CSV format)", type="csv")
+    max_rooms = st.number_input("Enter total number of rooms in hotel", min_value=0, step=1, value=100)
 
 with col2:
     if uploaded_file is not None:
@@ -67,8 +68,14 @@ with col2:
     data['is_no_show'] = predictions
     data['date'] = date_series
 
-    summary_data = data.groupby('date')['is_no_show'].sum().reset_index()
-    summary_data['potential_revenue'] = summary_data['is_no_show'] * data['avg_price_per_room'].mean()
+    summary_data = data.groupby('date').agg({'is_no_show': 'sum', 'avg_price_per_room': 'mean'}).reset_index()
+    summary_data['total_bookings'] = data.groupby('date').size().values  # Count of total bookings per date
+
+    # Calculate actual expected shows and overbooked rooms
+    summary_data['expected_shows'] = summary_data['total_bookings'] - summary_data['is_no_show']
+    summary_data['overbooked_rooms'] = summary_data['expected_shows'] - max_rooms
+    summary_data['overbooked_rooms'] = summary_data['overbooked_rooms'].clip(lower=0)  # Negative values to 0
+    summary_data['actual_revenue'] = summary_data['overbooked_rooms'] * summary_data['avg_price_per_room']
 
     if not summary_data.empty:
         summary_data['date'] = pd.to_datetime(summary_data['date'], format='%d.%m.%Y')
@@ -77,7 +84,7 @@ with col2:
 
         if pd.notnull(start_date) and pd.notnull(end_date):
             dates = pd.date_range(start=start_date, end=end_date).to_pydatetime().tolist()
-            
+
             if dates:
                 values = summary_data.set_index('date').reindex(dates, fill_value=0)['is_no_show'].tolist()
                 fig, ax = plt.subplots(figsize=(10, 5))
@@ -108,13 +115,16 @@ with col2:
         display_data = summary_data.set_index('date').resample('Y').sum().reset_index()
 
     display_data['date'] = pd.to_datetime(display_data['date']).dt.strftime('%d-%m-%Y')  # Format date
-    col1.dataframe(display_data[['date', 'is_no_show', 'potential_revenue']].rename(columns={'date': 'Date', 'is_no_show': 'No-Shows', 'potential_revenue': 'Potential Revenue'}))
+    display_columns = ['date', 'is_no_show', 'overbooked_rooms', 'actual_revenue']
+    col1.dataframe(display_data[display_columns].rename(columns={
+        'date': 'Date', 'is_no_show': 'Predicted No-Shows', 'overbooked_rooms': 'Rooms to Overbook', 'actual_revenue': 'Additional Revenue'
+    }))
 
     # Generate the bar chart for potential revenue
     if not summary_data.empty:
         summary_data['date'] = pd.to_datetime(summary_data['date'], format='%d-%m-%Y')
-        fig = px.bar(summary_data, x='date', y='potential_revenue',
-                    labels={'date': 'Date', 'potential_revenue': 'Potential Revenue'},
+        fig = px.bar(summary_data, x='date', y='actual_revenue',
+                    labels={'date': 'Date', 'actual_revenue': 'Actual Revenue'},
                     title="Potential Additional Revenue from Bookings")
         st.plotly_chart(fig, use_container_width=True)
     else:
