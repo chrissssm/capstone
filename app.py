@@ -174,7 +174,7 @@ def render_data(uploaded_file, max_rooms, col1, col2):
         lead_time = st.number_input("Lead Time (Days)", min_value=0, step=1)
         arrival_date = st.date_input("Arrival Date")  # Single field to input the entire date
 
-    avg_price_per_room = st.slider("Average Room Price", min_value=0.0, max_value=400.0, step=0.01)
+    avg_price_per_room = st.slider("Average Room Price", min_value=0.0, max_value=400.0, step=0.01, value=200.0)
 
     # Predict show/no-show for the input booking
     if st.button("Predict Show/No-Show"):
