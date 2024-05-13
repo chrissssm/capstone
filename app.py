@@ -16,7 +16,7 @@ st.set_page_config(
 
 @st.cache_data()
 def load_model():
-    filename =  r"C:\hotel\model.sav"
+    filename =  "model.sav"
     loaded_model = pickle.load(open(filename, "rb"))
     return loaded_model
 
