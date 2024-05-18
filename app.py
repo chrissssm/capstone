@@ -76,9 +76,9 @@ def render_data(uploaded_file, max_rooms, col1, col2):
 
         # Calculate actual expected shows and overbooked rooms
         summary_data['expected_shows'] = summary_data['total_bookings'] - summary_data['is_no_show']
-        summary_data['overbooked_rooms'] = summary_data['expected_shows'] - max_rooms
+        summary_data['overbooked_rooms'] = summary_data['is_no_show']
         summary_data['overbooked_rooms'] = summary_data['overbooked_rooms'].clip(lower=0)  # Negative values to 0
-        summary_data['actual_revenue'] = summary_data['overbooked_rooms'] * summary_data['avg_price_per_room']
+        summary_data['additional_possible_revenue'] = summary_data['overbooked_rooms'] * summary_data['avg_price_per_room']
 
         if not summary_data.empty:
             summary_data['date'] = pd.to_datetime(summary_data['date'], format='%d.%m.%Y')
@@ -118,16 +118,16 @@ def render_data(uploaded_file, max_rooms, col1, col2):
             display_data = summary_data.set_index('date').resample('Y').sum().reset_index()
 
         display_data['date'] = pd.to_datetime(display_data['date']).dt.strftime('%d-%m-%Y')  # Format date
-        display_columns = ['date', 'is_no_show', 'overbooked_rooms', 'actual_revenue']
+        display_columns = ['date', 'expected_shows', 'is_no_show', 'additional_possible_revenue']
         col1.dataframe(display_data[display_columns].rename(columns={
-            'date': 'Date', 'is_no_show': 'Predicted No-Shows', 'overbooked_rooms': 'Rooms to Overbook', 'actual_revenue': 'Additional Revenue'
+            'date': 'Date', 'expected_shows': 'Predicted Shows', 'is_no_show': 'Predicted No-Shows', 'additional_possible_revenue': 'Additional possible Revenue'
         }))
 
         # Generate the bar chart for potential revenue
         if not summary_data.empty:
             summary_data['date'] = pd.to_datetime(summary_data['date'], format='%d-%m-%Y')
-            fig = px.bar(summary_data, x='date', y='actual_revenue',
-                        labels={'date': 'Date', 'actual_revenue': 'Actual Revenue'},
+            fig = px.bar(summary_data, x='date', y='additional_possible_revenue',
+                        labels={'date': 'Date', 'additional_possible_revenue': 'Actual Revenue'},
                         title="Potential Additional Revenue from Bookings")
             st.plotly_chart(fig, use_container_width=True)
         else:
